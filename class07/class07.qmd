@@ -1,0 +1,239 @@
+---
+title: "class07 (Machine Learning 1)"
+author: "Amit Subramanian"
+format: pdf
+---
+
+
+## PCA of UK food data
+
+Read data from website, and try some visualizations
+
+```{r}
+url <- "https://tinyurl.com/UK-foods"
+x <- read.csv(url, row.names=1)
+x
+```
+
+```{r}
+dim(x)
+```
+
+```{r}
+cols <- rainbow(nrow(x))
+barplot( as.matrix(x), col=cols )
+```
+
+```{r}
+barplot( as.matrix(x), col=cols, beside=TRUE )
+```
+
+```{r}
+pairs(x, col=cols)
+```
+
+The main base R PCA function is called `prcomp()`, we will need to give it the transpose of our input data.
+
+```{r}
+pca <- prcomp( t(x) )
+```
+
+```{r}
+attributes(pca)
+```
+
+To make our new PCA plot (a.k.a PCA score plot) we access `pca$x`
+
+```{r}
+plot(pca$x[,1], pca$x[,2])
+text(pca$x[,1], pca$x[,2], colnames(x))
+```
+
+Now to add some colors
+
+```{r}
+country_cols <- c("orange", "red", "blue", "green")
+plot(pca$x[,1], pca$x[,2])
+text(pca$x[,1], pca$x[,2], colnames(x),
+col=country_cols)
+```
+
+We can use the square of pca$sdev (standard deviation), to calculate the amount of variation in the original data each PC accounts for  
+
+```{r}
+v <- round( pca$sdev^2/sum(pca$sdev^2) * 100 )
+v
+```
+
+```{r}
+z <- summary(pca)
+z$importance
+```
+
+Let's turn this into a bar plot
+
+```{r}
+barplot(v, xlab="Principal Component", ylab="Percent Variation")
+```
+
+We can also consider the influence of each orginal variable
+
+```{r}
+par(mar=c(10, 3, 0.35, 0))
+barplot( pca$rotation[,1], las=2 )
+```
+
+Now to use ggplot for these figures
+
+```{r}
+library(ggplot2)
+
+df <- as.data.frame(pca$x)
+df_lab <- tibble::rownames_to_column(df, "Country")
+
+# Our first basic plot
+ggplot(df_lab) + 
+  aes(PC1, PC2, col=Country) + 
+  geom_point()
+```
+
+We can also make the plot look much nicer by adding aesthetics and organization
+
+```{r}
+ggplot(df_lab) + 
+  aes(PC1, PC2, col=Country, label=Country) + 
+  geom_hline(yintercept = 0, col="gray") +
+  geom_vline(xintercept = 0, col="gray") +
+  geom_point(show.legend = FALSE) +
+  geom_label(hjust=1, nudge_x = -10, show.legend = FALSE) +
+  expand_limits(x = c(-300,500)) +
+  xlab("PC1 (67.4%)") +
+  ylab("PC2 (28%)") +
+  theme_bw()
+```
+
+Now customise the plot with layers
+
+```{r}
+ld <- as.data.frame(pca$rotation)
+ld_lab <- tibble::rownames_to_column(ld, "Food")
+
+ggplot(ld_lab) +
+  aes(PC1, Food) +
+  geom_col() 
+```
+
+Now let's reorder the y-axis by PC1 loadings and add a color scale
+
+```{r}
+ggplot(ld_lab) +
+  aes(PC1, reorder(Food, PC1), bg=PC1) +
+  geom_col() + 
+  xlab("PC1 Loadings/Contributions") +
+  ylab("Food Group") +
+  scale_fill_gradient2(low="purple", mid="gray", high="darkgreen", guide=NULL) +
+  theme_bw()
+```
+
+We can also utilize a biplot to view the data
+
+```{r}
+biplot(pca)
+```
+
+
+## PCA of RNA-Seq data
+
+```{r}
+url2 <- "https://tinyurl.com/expression-CSV"
+rna.data <- read.csv(url2, row.names=1)
+head(rna.data)
+```
+
+There is a nice summary of how well PCA is doing
+
+```{r}
+pca <- prcomp( t(rna.data) )
+summary(pca)
+```
+
+Now to add our PCA plot
+
+```{r}
+plot(pca$x[,1], pca$x[,2], xlab="PC1", ylab="PC2")
+```
+
+```{r}
+plot(pca, main="Quick scree plot")
+```
+
+Now to calculate the variation in the original data
+
+```{r}
+## Variance captured per PC 
+pca.var <- pca$sdev^2
+
+## Percent variance is often more informative to look at 
+pca.var.per <- round(pca.var/sum(pca.var)*100, 1)
+pca.var.per
+```
+
+Let's use this to make a bar plot
+
+```{r}
+barplot(pca.var.per, main="Scree Plot", 
+        names.arg = paste0("PC", 1:10),
+        xlab="Principal Component", ylab="Percent Variation")
+```
+
+Let us add a vector of colors for our samples
+
+```{r}
+## A vector of colors for wt and ko samples
+colvec <- colnames(rna.data)
+colvec[grep("wt", colvec)] <- "red"
+colvec[grep("ko", colvec)] <- "blue"
+
+plot(pca$x[,1], pca$x[,2], col=colvec, pch=16,
+     xlab=paste0("PC1 (", pca.var.per[1], "%)"),
+     ylab=paste0("PC2 (", pca.var.per[2], "%)"))
+
+text(pca$x[,1], pca$x[,2], labels = colnames(rna.data), pos=c(rep(4,5), rep(2,5)))
+```
+
+Now to use ggplot
+
+```{r}
+library(ggplot2)
+
+df <- as.data.frame(pca$x)
+
+# Our first basic plot
+ggplot(df) + 
+  aes(PC1, PC2) + 
+  geom_point()
+```
+
+Now to add some condition specific colors and aesthetics
+
+```{r}
+# Add a 'wt' and 'ko' "condition" column
+df$samples <- colnames(rna.data) 
+df$condition <- substr(colnames(rna.data),1,2)
+
+p <- ggplot(df) + 
+        aes(PC1, PC2, label=samples, col=condition) + 
+        geom_label(show.legend = FALSE)
+p
+```
+
+Now let's polish up the plot
+
+```{r}
+p + labs(title="PCA of RNASeq Data",
+       subtitle = "PC1 clealy seperates wild-type from knock-out samples",
+       x=paste0("PC1 (", pca.var.per[1], "%)"),
+       y=paste0("PC2 (", pca.var.per[2], "%)"),
+       caption="Class example data") +
+     theme_bw()
+```
