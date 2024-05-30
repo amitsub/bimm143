@@ -1,0 +1,128 @@
+---
+title: "class04"
+author: "Amit Subramanian"
+format: html
+---
+
+
+
+```{r}
+1 + 1
+```
+
+
+
+```{r}
+source("http://thegrantlab.org/misc/cdc.R")
+View(cdc)
+```
+
+```{r}
+head(cdc$height)
+```
+
+```{r}
+tail(cdc$weight, 20)
+```
+
+```{r}
+library(ggplot2)
+```
+
+
+
+```{r}
+ggplot(cdc) +
+    aes(x=height, y=weight) +
+    geom_point()
+```
+
+```{r}
+cor(cdc$height, cdc$weight)
+```
+
+```{r}
+hist(cdc$weight)
+```
+
+```{r}
+hist(cdc$height)
+```
+
+```{r}
+# Create height.m
+height_m <- cdc$height * 0.0254
+```
+
+```{r}
+# Create weight.kg
+weight_kg <- cdc$weight * 0.454
+```
+
+```{r}
+BMI <- (weight_kg)/(height_m^2) 
+
+ggplot(cdc) +
+    aes(x=height, y=BMI) +
+    geom_point()
+```
+
+```{r}
+cor(cdc$height, BMI)
+```
+
+```{r}
+head(BMI >= 30, 100)
+```
+
+```{r}
+eg <- c(TRUE, TRUE, FALSE, FALSE)
+   sum(eg)
+```
+
+```{r}
+sum(BMI >= 30)
+```
+
+```{r}
+sum(BMI >= 30)/length(BMI)
+```
+
+```{r}
+sum(BMI >= 30)/length(BMI) * 100
+```
+
+```{r}
+round( (sum(BMI >= 30)/length(BMI)) * 100, 1)
+```
+
+```{r}
+cdc[567, 6]
+```
+
+```{r}
+cdc[1:10, 6]
+```
+
+```{r}
+cdc[1:10, ]
+```
+
+```{r}
+plot(cdc[1:100, ]$height)
+```
+
+```{r}
+plot(cdc[1:100, "height"])
+```
+
+```{r}
+plot(cdc[1:100, 5])
+```
+
+```{r}
+table( c("f","f","m"))
+```
+
+
+
