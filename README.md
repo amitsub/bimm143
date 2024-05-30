@@ -1,2 +1,4 @@
 # bimm143
-Class Repository for Bioinformatics 
+This Repo is for my UCSD Bioinformatics class 
+
+
